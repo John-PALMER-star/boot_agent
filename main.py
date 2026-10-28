@@ -1,6 +1,7 @@
 import os
 import json
 from call_function import available_functions
+from call_function import call_function
 from prompts import system_prompt
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -24,17 +25,13 @@ messages = [
     {"role": "system", "content": system_prompt},
     {"role": "user", "content": args.user_prompt},
 ]
-# Now we can access `args.user_prompt`
-
-def main():
-    print("Hello from boot-agent!")
 
 response = client.chat.completions.create(
     model="openrouter/free",
     messages=messages,
     temperature=0,
     tools=available_functions,
-)
+    )
 
 def print_tokens(prompt_tokens, completion_tokens):
     print(f"Prompt tokens: {prompt_tokens}")
@@ -55,6 +52,8 @@ else:
     for tool_call in message.tool_calls:
         function_args = json.loads(tool_call.function.arguments or "{}")
         print(f"Calling function: {tool_call.function.name}({function_args})")
-
-if __name__ == "__main__":
-    main()
+        result_message = call_function(tool_call)
+        if not result_message['content']:
+            raise Exception("Result message content is empty.")
+        if args.verbose is True:
+            print(f"-> {result_message['content']}")
